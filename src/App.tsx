@@ -1,26 +1,26 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { useState } from "react";
+import { Button } from "primereact/button";
+import { InputText } from "primereact/inputtext";
+import "./App.css";
+import "primereact/resources/themes/lara-light-indigo/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+export const App = () => {
+    const [id, setId] = useState("");
+    const [wkt, setWkt] = useState("");
 
-export default App;
+    const fetchWkt = async () => {
+        // add logic for fetching
+    };
+
+    return (
+        <div className="container">
+            <h1>OSM to WKT</h1>
+            <h3>Enter OpenStreetMap's layer ID to fetch its WKT</h3>
+            <InputText value={id} onChange={(e) => setId(e.target.value)} placeholder="OSM ID" />
+            <Button label="Get layer's WKT" disabled={!id} onClick={fetchWkt} />
+            {wkt && <pre>{wkt}</pre>}
+        </div>
+    );
+};
