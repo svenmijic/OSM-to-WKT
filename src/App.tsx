@@ -1,18 +1,25 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "primereact/button";
 import { InputText } from "primereact/inputtext";
 import * as osmtogeojson from "osmtogeojson";
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
+import { Dropdown } from "primereact/dropdown";
+import { Toast } from "primereact/toast";
 import "./App.css";
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
+import { OverpassApiResponse } from "./models/overpassResponse";
+
+type GeometryType = "node" | "way" | "relation";
 
 export const App = () => {
+    const [type, setType] = useState<GeometryType>("relation");
     const [id, setId] = useState("");
     const [layer, setLayer] = useState<any>();
     const [wkt, setWkt] = useState("");
     const [loading, setLoading] = useState(false);
+    const toast = useRef(null);
 
     const convertToWkt = () => {
         if (!layer || !layer.geometry || !layer.geometry.coordinates) return "";
@@ -27,9 +34,10 @@ export const App = () => {
 
     const fetchLayers = async () => {
         setLoading(true);
+        setLayer(undefined);
         try {
             const res = await fetch(
-                `https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A25%5D%3B%0A%28%0A%20%20relation%28${id}%29%3B%0A%29%3B%0Aout%20body%3B%0A%3E%3B%0Aout%20skel%20qt%3B%0A`,
+                `https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A25%5D%3B%0A%28%0A%20%20${type}%28${id}%29%3B%0A%29%3B%0Aout%20body%3B%0A%3E%3B%0Aout%20skel%20qt%3B%0A`,
                 {
                     method: "GET",
                     headers: {
@@ -37,12 +45,20 @@ export const App = () => {
                     },
                 }
             );
-            const json = await res.json();
-            const featuresCollection = osmtogeojson.default(json);
-            const geoJson = featuresCollection.features.filter(
-                (x) => x.geometry.type === "Polygon"
-            );
-            setLayer(geoJson[0]);
+            const json: OverpassApiResponse = await res.json();
+            if (json && json.elements && json.elements.length > 0) {
+                const featuresCollection = osmtogeojson.default(json);
+                const geoJson = featuresCollection.features.filter(
+                    (x) => x.geometry.type === "Polygon"
+                );
+                setLayer(geoJson[0]);
+            } else {
+                //@ts-ignore
+                toast.current.show({
+                    severity: "warn",
+                    summary: `No ${type} layer found with provided OSM ID`,
+                });
+            }
         } catch (err) {
             console.error(err);
         }
@@ -55,10 +71,19 @@ export const App = () => {
             <div className="container">
                 <section>
                     <div id="input-container">
+                        <Dropdown
+                            value={type}
+                            options={[
+                                { label: "Node", value: "node" },
+                                { label: "Way", value: "way" },
+                                { label: "Relation", value: "relation" },
+                            ]}
+                            onChange={(e) => setType(e.value)}
+                        />
                         <InputText
                             value={id}
                             onChange={(e) => setId(e.target.value)}
-                            placeholder="Enter OpenStreetMap's layer ID"
+                            placeholder="OpenStreetMap's layer ID"
                         />
                         <Button
                             label="Fetch layer"
@@ -82,6 +107,7 @@ export const App = () => {
                     {wkt && <pre>{wkt}</pre>}
                 </section>
             </div>
+            <Toast ref={toast} position="bottom-right" />
         </div>
     );
 };
