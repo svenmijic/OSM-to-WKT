@@ -5,11 +5,11 @@ import * as osmtogeojson from "osmtogeojson";
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import { Dropdown } from "primereact/dropdown";
 import { Toast } from "primereact/toast";
+import { OverpassApiResponse } from "./models/overpassResponse";
 import "./App.css";
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
-import { OverpassApiResponse } from "./models/overpassResponse";
 
 type GeometryType = "node" | "way" | "relation";
 
@@ -35,6 +35,7 @@ export const App = () => {
     const fetchLayers = async () => {
         setLoading(true);
         setLayer(undefined);
+        setWkt("");
         try {
             const res = await fetch(
                 `https://overpass-api.de/api/interpreter?data=%5Bout%3Ajson%5D%5Btimeout%3A25%5D%3B%0A%28%0A%20%20${type}%28${id}%29%3B%0A%29%3B%0Aout%20body%3B%0A%3E%3B%0Aout%20skel%20qt%3B%0A`,
